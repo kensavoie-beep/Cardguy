@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Which Card Do I Use?</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: -apple-system, 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 60px;
+    }
+    .container { width: 100%; max-width: 420px; }
+
+    /* Header */
+    .eyebrow { font-size: 11px; letter-spacing: 0.15em; color: #555; text-transform: uppercase; margin-bottom: 6px; }
+    h1 { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 28px; }
+
+    /* Section label */
+    .section-label { font-size: 11px; color: #444; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+
+    /* Card toggles */
+    .card-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; }
+    .card-toggle {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 10px;
+      border: 2px solid #2a2a2a; background: #111;
+      color: #555; cursor: pointer; font-size: 13px;
+      font-weight: 400; text-align: left; width: 100%;
+      transition: all 0.15s ease;
+    }
+    .card-toggle.active { color: #fff; }
+    .card-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #333; flex-shrink: 0; transition: background 0.15s;
+    }
+    .card-network { margin-left: auto; font-size: 11px; opacity: 0.5; }
+
+    /* Category grid */
+    .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 28px; }
+    .cat-btn {
+      padding: 12px; border-radius: 10px;
+      border: 1px solid #1e1e1e; background: #0f0f0f;
+      color: #555; cursor: pointer; font-size: 12px;
+      font-weight: 400; text-align: left; transition: all 0.15s;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .cat-btn.active { border-color: #c9a84c; background: #1a1a0a; color: #c9a84c; font-weight: 600; }
+    .cat-icon { font-size: 18px; }
+
+    /* Results */
+    .results-label { font-size: 11px; color: #444; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+    .warning-box {
+      background: #111; border: 1px solid #222; border-radius: 8px;
+      padding: 10px 12px; font-size: 11px; color: #666; margin-bottom: 10px;
+    }
+    .result-list { display: flex; flex-direction: column; gap: 6px; }
+    .result-card {
+      border-radius: 12px; padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
+      border: 1px solid #222; background: #111;
+      transition: all 0.2s;
+    }
+    .result-card.winner { border-color: var(--accent); background: var(--color); }
+    .result-card.faded { opacity: 0.5; }
+    .rank { font-size: 14px; font-weight: 700; color: #444; min-width: 28px; text-align: center; }
+    .rank.winner { font-size: 22px; color: var(--accent); }
+    .result-info { flex: 1; }
+    .result-name { font-weight: 600; font-size: 14px; color: #888; }
+    .result-name.winner { color: #fff; }
+    .result-note { font-size: 12px; color: #555; margin-top: 2px; }
+    .result-note.winner { color: var(--accent); }
+    .result-rate { text-align: right; }
+    .rate-num { font-size: 18px; font-weight: 700; color: #444; }
+    .rate-num.winner { color: var(--accent); }
+    .rate-unit { font-size: 12px; font-weight: 400; margin-left: 2px; }
+    .rate-cpp { font-size: 10px; color: #555; margin-top: 1px; }
+
+    /* Dining details */
+    .dining-toggle-btn {
+      width: 100%; background: #0f0f0f; border: 1px solid #222;
+      border-radius: 8px; padding: 10px 12px; color: #555;
+      font-size: 11px; cursor: pointer; text-align: left;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 12px;
+    }
+    .dining-details {
+      background: #0f0f0f; border: 1px solid #222; border-top: none;
+      border-radius: 0 0 8px 8px; padding: 12px; display: none;
+    }
+    .dining-details.open { display: block; }
+    .dining-section-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+    .dining-section-label.yes { color: #4a7c4a; }
+    .dining-section-label.no { color: #7c4a4a; }
+    .dining-item { font-size: 12px; color: #888; padding: 3px 0; border-bottom: 1px solid #1a1a1a; }
+    .dining-item.no { color: #666; }
+    .dining-fine { font-size: 10px; color: #444; line-height: 1.5; margin-top: 8px; }
+
+    /* General tip */
+    .general-tip {
+      margin-top: 12px; padding: 10px 12px;
+      background: #0f0f0f; border: 1px solid #1a1a1a;
+      border-radius: 8px; font-size: 11px; color: #555;
+    }
+
+    /* Empty state */
+    .empty { text-align: center; color: #333; font-size: 13px; padding-top: 8px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="eyebrow">Rewards Optimizer</div>
+  <h1>Which card do I use?</h1>
+
+  <div class="section-label">Your Cards</div>
+  <div class="card-list" id="cardList"></div>
+
+  <div class="section-label">What are you buying?</div>
+  <div class="category-grid" id="categoryGrid"></div>
+
+  <div id="results"></div>
+</div>
+
+<script>
+const CARDS = [
+  {
+    id: "csp", shortName: "Sapphire Preferred", network: "Visa",
+    color: "#1a3a5c", accent: "#c9a84c",
+    rewards: {
+      dining:     { rate: 3,   unit: "pts",   note: "3x Ultimate Rewards" },
+      travel:     { rate: 5,   unit: "pts",   note: "5x on Chase Travel, 2x other travel" },
+      grocery:    { rate: 3,   unit: "pts",   note: "3x on online grocery (excl. Walmart/Target)" },
+      streaming:  { rate: 3,   unit: "pts",   note: "3x on select streaming" },
+      gas:        { rate: 1,   unit: "pts",   note: "1x base" },
+      drugstore:  { rate: 1,   unit: "pts",   note: "1x base" },
+      general:    { rate: 1,   unit: "pts",   note: "1x on everything else" },
+    },
+    pointValue: 0.02,
+  },
+  {
+    id: "cfu", shortName: "Freedom Unlimited", network: "Visa",
+    color: "#1a3a5c", accent: "#e8e8e8",
+    rewards: {
+      dining:     { rate: 3,   unit: "pts",   note: "3x Ultimate Rewards" },
+      travel:     { rate: 5,   unit: "pts",   note: "5x on Chase Travel portal" },
+      drugstore:  { rate: 3,   unit: "pts",   note: "3x at drugstores" },
+      grocery:    { rate: 1.5, unit: "pts",   note: "1.5x base on all purchases" },
+      streaming:  { rate: 1.5, unit: "pts",   note: "1.5x base" },
+      gas:        { rate: 1.5, unit: "pts",   note: "1.5x base" },
+      general:    { rate: 1.5, unit: "pts",   note: "1.5x on everything" },
+    },
+    pointValue: 0.015,
+  },
+  {
+    id: "cff", shortName: "Freedom Flex", network: "Mastercard",
+    color: "#1a3a5c", accent: "#4a90d9",
+    rewards: {
+      dining:     { rate: 3,   unit: "pts",   note: "3x Ultimate Rewards" },
+      travel:     { rate: 5,   unit: "pts",   note: "5x on Chase Travel portal" },
+      drugstore:  { rate: 3,   unit: "pts",   note: "3x at drugstores" },
+      grocery:    { rate: 1,   unit: "pts",   note: "1x base (check quarterly 5x category)" },
+      streaming:  { rate: 1,   unit: "pts",   note: "1x base (check quarterly 5x category)" },
+      gas:        { rate: 1,   unit: "pts",   note: "1x base (check quarterly 5x category)" },
+      general:    { rate: 1,   unit: "pts",   note: "1x base" },
+    },
+    pointValue: 0.015,
+  },
+  {
+    id: "amex", shortName: "Delta Gold Amex", network: "Amex",
+    color: "#003366", accent: "#c8102e",
+    note: "Best used for Delta flights & checked bag perk",
+    rewards: {
+      dining:     { rate: 2,   unit: "miles", note: "2x Delta miles" },
+      grocery:    { rate: 2,   unit: "miles", note: "2x at US supermarkets" },
+      gas:        { rate: 1,   unit: "miles", note: "1x base" },
+      travel:     { rate: 2,   unit: "miles", note: "2x Delta purchases, 1x other travel" },
+      streaming:  { rate: 1,   unit: "miles", note: "1x base" },
+      drugstore:  { rate: 1,   unit: "miles", note: "1x base" },
+      general:    { rate: 1,   unit: "miles", note: "1x on everything else" },
+    },
+    pointValue: 0.012,
+  },
+  {
+    id: "apple", shortName: "Apple Card", network: "Mastercard",
+    color: "#1c1c1e", accent: "#a0a0a0",
+    note: "Only competitive when Apple Pay is accepted",
+    rewards: {
+      dining:     { rate: 2,   unit: "cash",  note: "2% Apple Pay tap-to-pay" },
+      grocery:    { rate: 2,   unit: "cash",  note: "2% with Apple Pay" },
+      gas:        { rate: 2,   unit: "cash",  note: "2% with Apple Pay tap" },
+      streaming:  { rate: 2,   unit: "cash",  note: "2% with Apple Pay" },
+      travel:     { rate: 2,   unit: "cash",  note: "2% with Apple Pay" },
+      drugstore:  { rate: 2,   unit: "cash",  note: "2% with Apple Pay" },
+      general:    { rate: 2,   unit: "cash",  note: "2% anywhere Apple Pay accepted, 1% physical card" },
+    },
+    pointValue: 0.01,
+  },
+];
+
+const CATEGORIES = [
+  { id: "dining",    label: "Dining & Restaurants", icon: "🍽️" },
+  { id: "grocery",   label: "Groceries",             icon: "🛒" },
+  { id: "gas",       label: "Gas & EV Charging",     icon: "⛽" },
+  { id: "travel",    label: "Travel (flights, hotels)", icon: "✈️" },
+  { id: "streaming", label: "Streaming Services",    icon: "📺" },
+  { id: "drugstore", label: "Drugstore / Pharmacy",  icon: "💊" },
+  { id: "general",   label: "Everything Else",       icon: "🛍️" },
+];
+
+const DINING_COUNTS = [
+  "Sit-down restaurants",
+  "Fast food (McDonald's, Chick-fil-A, etc.)",
+  "Coffee shops (Starbucks, local cafes)",
+  "Bars & breweries",
+  "Food delivery (DoorDash, Uber Eats)",
+  "Grab-and-go / deli counters",
+  "Food trucks",
+  "Bakeries",
+];
+const DINING_NOT = [
+  "Grocery stores (even with hot food)",
+  "Walmart / Target cafes",
+  "Costco food court",
+  "Gas station food / convenience stores",
+];
+const DINING_NOTE = "Chase uses merchant category code 5812 (Eating Places) and 5814 (Fast Food). If a place codes as grocery or general retail, you won't get dining points — this happens occasionally at Costco, Walmart, and warehouse clubs.";
+
+// State
+let activeCards = new Set(["csp","cfu","cff","amex","apple"]);
+let selectedCategory = null;
+let diningOpen = false;
+
+function getRanked(category) {
+  return CARDS
+    .filter(c => activeCards.has(c.id))
+    .map(card => {
+      const reward = card.rewards[category] || card.rewards.general;
+      const effectiveValue = reward.rate * card.pointValue;
+      return { card, reward, effectiveValue };
+    })
+    .sort((a, b) => b.effectiveValue - a.effectiveValue);
+}
+
+function renderCards() {
+  const list = document.getElementById("cardList");
+  list.innerHTML = "";
+  CARDS.forEach(card => {
+    const active = activeCards.has(card.id);
+    const btn = document.createElement("button");
+    btn.className = "card-toggle" + (active ? " active" : "");
+    btn.style.borderColor = active ? card.accent : "#2a2a2a";
+    btn.style.background = active ? card.color : "#111";
+    btn.innerHTML = `
+      <span class="card-dot" style="background:${active ? card.accent : "#333"}"></span>
+      ${card.shortName}
+      <span class="card-network">${card.network}</span>
+    `;
+    btn.onclick = () => {
+      if (activeCards.has(card.id)) activeCards.delete(card.id);
+      else activeCards.add(card.id);
+      render();
+    };
+    list.appendChild(btn);
+  });
+}
+
+function renderCategories() {
+  const grid = document.getElementById("categoryGrid");
+  grid.innerHTML = "";
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "cat-btn" + (selectedCategory === cat.id ? " active" : "");
+    btn.innerHTML = `<span class="cat-icon">${cat.icon}</span><span>${cat.label}</span>`;
+    btn.onclick = () => {
+      selectedCategory = selectedCategory === cat.id ? null : cat.id;
+      diningOpen = false;
+      render();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function renderResults() {
+  const el = document.getElementById("results");
+  if (!selectedCategory) {
+    el.innerHTML = `<div class="empty">Select a purchase category above</div>`;
+    return;
+  }
+  const ranked = getRanked(selectedCategory);
+  if (!ranked.length) {
+    el.innerHTML = `<div class="empty">No cards selected</div>`;
+    return;
+  }
+
+  let html = `<div class="results-label">Use This Card</div>`;
+
+  const winner = ranked[0];
+  if (winner.card.note) {
+    html += `<div class="warning-box">⚠️ ${winner.card.note}</div>`;
+  }
+
+  html += `<div class="result-list">`;
+  ranked.forEach(({ card, reward, effectiveValue }, i) => {
+    const isWinner = i === 0;
+    const faded = i > 2 ? " faded" : "";
+    const cpp = (effectiveValue * 100).toFixed(1);
+    html += `
+      <div class="result-card${isWinner ? " winner" : ""}${faded}"
+        style="--color:${card.color};--accent:${card.accent}">
+        <div class="rank${isWinner ? " winner" : ""}">${isWinner ? "★" : i + 1}</div>
+        <div class="result-info">
+          <div class="result-name${isWinner ? " winner" : ""}">${card.shortName}</div>
+          <div class="result-note${isWinner ? " winner" : ""}">${reward.note}</div>
+        </div>
+        <div class="result-rate">
+          <div class="rate-num${isWinner ? " winner" : ""}">
+            ${reward.rate}<span class="rate-unit">x ${reward.unit}</span>
+          </div>
+          <div class="rate-cpp">~${cpp}¢ / $1</div>
+        </div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  if (selectedCategory === "dining") {
+    html += `
+      <button class="dining-toggle-btn" id="diningToggle">
+        <span>💡 What counts as dining?</span>
+        <span id="diningArrow">${diningOpen ? "▲" : "▼"}</span>
+      </button>
+      <div class="dining-details${diningOpen ? " open" : ""}" id="diningDetails">
+        <div class="dining-section-label yes">✓ Counts as Dining</div>
+        ${DINING_COUNTS.map(l => `<div class="dining-item">${l}</div>`).join("")}
+        <div class="dining-section-label no" style="margin-top:10px">✗ Does NOT count</div>
+        ${DINING_NOT.map(l => `<div class="dining-item no">${l}</div>`).join("")}
+        <div class="dining-fine">⚠️ ${DINING_NOTE}</div>
+      </div>`;
+  }
+
+  if (selectedCategory === "general") {
+    html += `<div class="general-tip">💡 Tip: Freedom Unlimited's 1.5x on everything beats most cards for miscellaneous spend. Pair with Sapphire Preferred to transfer points to travel partners.</div>`;
+  }
+
+  el.innerHTML = html;
+
+  if (selectedCategory === "dining") {
+    document.getElementById("diningToggle").onclick = () => {
+      diningOpen = !diningOpen;
+      document.getElementById("diningDetails").classList.toggle("open", diningOpen);
+      document.getElementById("diningArrow").textContent = diningOpen ? "▲" : "▼";
+    };
+  }
+}
+
+function render() {
+  renderCards();
+  renderCategories();
+  renderResults();
+}
+
+render();
+</script>
+</body>
+</html>
